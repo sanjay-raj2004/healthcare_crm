@@ -1,0 +1,141 @@
+{
+  "info": {
+    "name": "Healthcare CRM API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "patientId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Health check",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+        "pm.test('status is ok', function () { pm.expect(pm.response.json().status).to.eql('ok'); });"
+      ] } }],
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "2. Database health check",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+        "pm.test('database connected', function () { pm.expect(pm.response.json().database).to.eql('connected'); });"
+      ] } }],
+      "request": { "method": "GET", "url": "{{baseUrl}}/health/db" }
+    },
+    {
+      "name": "3. Process summary - full example",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+        "const json = pm.response.json();",
+        "pm.test('name is Neha Har', function () { pm.expect(json.patient_name).to.eql('Neha Har'); });",
+        "pm.test('age is 19', function () { pm.expect(json.age).to.eql(19); });",
+        "pm.test('has all 7 fields', function () {",
+        "  ['patient_name','age','visit_date','diagnosis','symptoms','medication','doctors_advice'].forEach(function (k) { pm.expect(json).to.have.property(k); });",
+        "});"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"summary\": \"Today patient Neha Har, age 19, visited the hospital. She was diagnosed with fever and headache. The doctor prescribed medication and advised her to take rest.\"\n}" },
+        "url": "{{baseUrl}}/api/process-summary"
+      }
+    },
+    {
+      "name": "4. Process summary - missing info stays null",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+        "const json = pm.response.json();",
+        "pm.test('name is Ravi', function () { pm.expect(json.patient_name).to.eql('Ravi'); });",
+        "pm.test('nothing invented', function () {",
+        "  pm.expect(json.diagnosis).to.be.null;",
+        "  pm.expect(json.medication).to.be.null;",
+        "  pm.expect(json.doctors_advice).to.be.null;",
+        "});"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"summary\": \"Patient Ravi visited the clinic.\"\n}" },
+        "url": "{{baseUrl}}/api/process-summary"
+      }
+    },
+    {
+      "name": "5. Process summary - empty rejected",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Status is 422', function () { pm.response.to.have.status(422); });"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"summary\": \"\"\n}" },
+        "url": "{{baseUrl}}/api/process-summary"
+      }
+    },
+    {
+      "name": "6. Create patient",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+        "const json = pm.response.json();",
+        "pm.test('has id and created_at', function () { pm.expect(json.id).to.be.a('number'); pm.expect(json.created_at).to.be.a('string'); });",
+        "pm.collectionVariables.set('patientId', json.id);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"patient_name\": \"Test Patient One\",\n  \"age\": 30,\n  \"visit_date\": \"2026-10-30\",\n  \"diagnosis\": \"Common cold\",\n  \"symptoms\": \"cough, sore throat\",\n  \"medication\": \"Paracetamol\",\n  \"doctors_advice\": \"Drink fluids and rest\"\n}" },
+        "url": "{{baseUrl}}/api/patients"
+      }
+    },
+    {
+      "name": "7. Create patient - invalid age rejected",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Status is 422', function () { pm.response.to.have.status(422); });"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"patient_name\": \"Test Patient Two\",\n  \"age\": 200\n}" },
+        "url": "{{baseUrl}}/api/patients"
+      }
+    },
+    {
+      "name": "8. Create patient - missing name rejected",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Status is 422', function () { pm.response.to.have.status(422); });"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"age\": 25\n}" },
+        "url": "{{baseUrl}}/api/patients"
+      }
+    },
+    {
+      "name": "9. List all patients",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+        "const json = pm.response.json();",
+        "pm.test('returns a non-empty list', function () { pm.expect(json).to.be.an('array'); pm.expect(json.length).to.be.above(0); });"
+      ] } }],
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/patients" }
+    },
+    {
+      "name": "10. Get one patient",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+        "pm.test('correct patient', function () { pm.expect(pm.response.json().patient_name).to.eql('Test Patient One'); });"
+      ] } }],
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/patients/{{patientId}}" }
+    },
+    {
+      "name": "11. Get patient - not found",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Status is 404', function () { pm.response.to.have.status(404); });",
+        "pm.test('message is Patient not found', function () { pm.expect(pm.response.json().detail).to.eql('Patient not found'); });"
+      ] } }],
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/patients/9999999" }
+    }
+  ]
+}
